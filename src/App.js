@@ -1,14 +1,29 @@
 // src/App.js
 import React, { useState } from 'react';
+import { PDFDocument, rgb } from 'pdf-lib';
 import './App.css';
 
 function App() {
   const [blobURL, setBlobURL] = useState('');
 
-  const generateBlobURL = () => {
-    // Create a PDF Blob
-    const pdfContent = '<h1>Hello, this is a PDF content!</h1>';
-    const blob = new Blob([pdfContent], { type: 'application/pdf' });
+  const generateBlobURL = async () => {
+    // Create a new PDFDocument
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([600, 400]);
+
+    // Draw text on the page
+    page.drawText('Hello, this is a PDF content!', {
+      x: 50,
+      y: 350,
+      size: 20,
+      color: rgb(0, 0, 0),
+    });
+
+    // Serialize the PDFDocument to bytes (a Uint8Array)
+    const pdfBytes = await pdfDoc.save();
+
+    // Create a Blob from the PDF bytes
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
     // Generate a Blob URL
     const url = URL.createObjectURL(blob);
@@ -46,6 +61,12 @@ function App() {
         <button className="menu-btn" onClick={downloadFile} disabled={!blobURL}>Download PDF</button>
         <button className="menu-btn" onClick={openNewTab}>Open example.com in New Tab</button>
         <button className="menu-btn" onClick={openAndCloseTab}>Open & Close example.com</button>
+        {blobURL && (
+          <div>
+            <h2>Embedded PDF</h2>
+            <iframe src={blobURL} title="PDF Content" width="600" height="400" />
+          </div>
+        )}
       </div>
     </div>
   );
