@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState } from 'react';
 import { PDFDocument, rgb } from 'pdf-lib';
 import './App.css';
@@ -7,11 +6,9 @@ function App() {
   const [blobURL, setBlobURL] = useState('');
 
   const generateBlobURL = async () => {
-    // Create a new PDFDocument
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([600, 400]);
 
-    // Draw text on the page
     page.drawText('Hello, this is a PDF content!', {
       x: 50,
       y: 350,
@@ -19,36 +16,31 @@ function App() {
       color: rgb(0, 0, 0),
     });
 
-    // Serialize the PDFDocument to bytes (a Uint8Array)
     const pdfBytes = await pdfDoc.save();
 
-    // Create a Blob from the PDF bytes
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
-    // Generate a Blob URL
     const url = URL.createObjectURL(blob);
 
-    // Update state with the Blob URL
     setBlobURL(url);
   };
 
   const downloadFile = () => {
-    // Create an anchor element to trigger the download
     const link = document.createElement('a');
     link.href = blobURL;
-    link.download = 'example.pdf'; // The name for the downloaded file
+    link.download = 'example.pdf'; 
     link.click();
   };
 
   const openNewTab = () => {
-    window.open('http://example.com', '_blank');
+    window.open(window.location.href, '_blank');
   };
 
   const openAndCloseTab = () => {
-    const newTab = window.open('http://example.com', '_blank');
+    const newTab = window.open(window.location.href, '_blank');
     setTimeout(() => {
       newTab.close();
-    }, 3000); // Close the new tab after 3 seconds
+    }, 3000);
   };
 
   return (
@@ -59,8 +51,9 @@ function App() {
       <div className="content">
         <button className="menu-btn" onClick={generateBlobURL}>Generate PDF</button>
         <button className="menu-btn" onClick={downloadFile} disabled={!blobURL}>Download PDF</button>
-        <button className="menu-btn" onClick={openNewTab}>Open example.com in New Tab</button>
-        <button className="menu-btn" onClick={openAndCloseTab}>Open & Close example.com</button>
+        <button className="menu-btn" onClick={openNewTab} disabled={!blobURL}>Open PDF in New Tab</button>
+        <button className="menu-btn" onClick={openAndCloseTab}>Open & Close Current Tab</button>
+        <button className="menu-btn" onClick={() => window.open(window.location.href, '_blank')}>Open Current Page in New Tab</button>
         {blobURL && (
           <div>
             <h2>Embedded PDF</h2>
