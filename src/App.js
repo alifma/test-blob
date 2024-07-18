@@ -8,7 +8,7 @@ function App() {
   const [cookieStatus, setCookieStatus] = useState(false);
   const [localStorageStatus, setLocalStorageStatus] = useState(false);
   const [sessionStorageStatus, setSessionStorageStatus] = useState(false);
-  const [cacheStatus, setCacheStatus] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState(null); // null indicates loading state
 
   useEffect(() => {
     const checkLocalStorageStatus = () => {
@@ -30,9 +30,14 @@ function App() {
         if (cacheNames.includes("test-cache")) {
           const cache = await caches.open("test-cache");
           const cachedResponse = await cache.match("/test");
-          setCacheStatus(!!cachedResponse);
+          if (cachedResponse) {
+            const responseData = await cachedResponse.json(); // Assuming cached response is JSON data
+            setCacheStatus(responseData);
+          } else {
+            setCacheStatus(null); // No cached response found
+          }
         } else {
-          setCacheStatus(false);
+          setCacheStatus(null); // Cache not found
         }
       }
     };
@@ -146,14 +151,14 @@ function App() {
     if ("caches" in window) {
       const cache = await caches.open("test-cache");
       await cache.add(new Request("/test"));
-      setCacheStatus(true);
+      setCacheStatus({ exampleData: "some value" }); // Set example data to cache
     }
   };
 
   const clearCacheData = async () => {
     if ("caches" in window) {
       await caches.delete("test-cache");
-      setCacheStatus(false);
+      setCacheStatus(null);
     }
   };
 
@@ -227,8 +232,8 @@ function App() {
             <p style={{ color: getStatusColor(cookieStatus) }}>
               Cookie Status: {cookieStatus ? "Set" : "Not Set"}
             </p>
-            <p style={{ color: getStatusColor(cacheStatus) }}>
-              Cache Status: {cacheStatus ? "Set" : "Not Set"}
+            <p style={{ color: getStatusColor(cacheStatus !== null) }}>
+              Cache Status: {cacheStatus !== null ? "Stored: " + JSON.stringify(cacheStatus) : "Not Set"}
             </p>
             <p style={{ color: getStatusColor(localStorageStatus) }}>
               Local Storage Status: {localStorageStatus ? "Set" : "Not Set"}
