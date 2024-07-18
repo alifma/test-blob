@@ -5,16 +5,40 @@ import "./App.css";
 function App() {
   const [blobURL, setBlobURL] = useState("");
   const [formData, setFormData] = useState({ username: "" });
+  const [cookieStatus, setCookieStatus] = useState(false);
+  const [localStorageStatus, setLocalStorageStatus] = useState(false);
+  const [sessionStorageStatus, setSessionStorageStatus] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState(false);
 
   useEffect(() => {
-    document.cookie =
-      "user=testUser; expires=Fri, 31 Dec 2024 12:00:00 UTC; path=/";
-    localStorage.setItem("key", "value");
-    sessionStorage.setItem("sessionKey", "sessionValue");
-    const savedFormData = localStorage.getItem("formData");
-    if (savedFormData) {
-      setFormData(JSON.parse(savedFormData));
-    }
+    const checkLocalStorageStatus = () => {
+      const savedFormData = localStorage.getItem("formData");
+      const savedLocalStorage = localStorage.getItem("key");
+      console.log("localStorage:", savedLocalStorage, savedFormData);
+      if (savedFormData) {
+        setFormData(JSON.parse(savedFormData));
+      }
+      if (savedLocalStorage) {
+        setLocalStorageStatus(true);
+      }
+    };
+
+    const checkCacheStatus = async () => {
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        console.log("caches:", caches, cacheNames);
+        if (cacheNames.includes("test-cache")) {
+          const cache = await caches.open("test-cache");
+          const cachedResponse = await cache.match("/test");
+          setCacheStatus(!!cachedResponse);
+        } else {
+          setCacheStatus(false);
+        }
+      }
+    };
+
+    checkLocalStorageStatus();
+    checkCacheStatus();
   }, []);
 
   const generateBlobURL = async () => {
@@ -71,42 +95,108 @@ function App() {
     alert("Form data saved!");
   };
 
+  const setAllData = () => {
+    setCookie();
+    setLocalStorageItem();
+    setSessionStorageItem();
+    setCacheData();
+  };
+
+  const clearAllData = () => {
+    clearCookie();
+    clearLocalStorageItem();
+    clearSessionStorageItem();
+    clearCacheData();
+  };
+
+  const setCookie = () => {
+    document.cookie =
+      "user=testUser; expires=Fri, 31 Dec 2024 12:00:00 UTC; path=/";
+    setCookieStatus(true);
+  };
+
+  const clearCookie = () => {
+    document.cookie =
+      "user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+    setCookieStatus(false);
+  };
+
+  const setLocalStorageItem = () => {
+    localStorage.setItem("key", "value");
+    setLocalStorageStatus(true);
+  };
+
+  const clearLocalStorageItem = () => {
+    localStorage.removeItem("key");
+    localStorage.removeItem("formData");
+    setLocalStorageStatus(false);
+  };
+
+  const setSessionStorageItem = () => {
+    sessionStorage.setItem("sessionKey", "sessionValue");
+    setSessionStorageStatus(true);
+  };
+
+  const clearSessionStorageItem = () => {
+    sessionStorage.removeItem("sessionKey");
+    setSessionStorageStatus(false);
+  };
+
+  const setCacheData = async () => {
+    if ("caches" in window) {
+      const cache = await caches.open("test-cache");
+      await cache.add(new Request("/test"));
+      setCacheStatus(true);
+    }
+  };
+
+  const clearCacheData = async () => {
+    if ("caches" in window) {
+      await caches.delete("test-cache");
+      setCacheStatus(false);
+    }
+  };
+
+  const getStatusColor = (status) => (status ? "green" : "red");
+
   return (
     <div className="App">
       <header className="App-header">
         <h1>React PDF Blob Example</h1>
       </header>
       <div className="content">
-        <button className="menu-btn" onClick={generateBlobURL}>
-          Generate PDF
-        </button>
-        <button className="menu-btn" onClick={downloadFile} disabled={!blobURL}>
-          Download PDF
-        </button>
-        <button className="menu-btn" onClick={openNewTab} disabled={!blobURL}>
-          Open PDF in New Tab
-        </button>
-        <button className="menu-btn" onClick={openAndCloseTab}>
-          Open & Close Current Tab
-        </button>
-        <button
-          className="menu-btn"
-          onClick={() => window.open(window.location.href, "_blank")}
-        >
-          Open Current Page in New Tab
-        </button>
-        {blobURL && (
-          <div>
-            <h2>Embedded PDF</h2>
-            <iframe
-              src={blobURL}
-              title="PDF Content"
-              width="600"
-              height="400"
-            />
-          </div>
-        )}
-        <div>
+        <div className="column">
+          <button className="menu-btn" onClick={generateBlobURL}>
+            Generate PDF
+          </button>
+          <button className="menu-btn" onClick={downloadFile} disabled={!blobURL}>
+            Download PDF
+          </button>
+          <button className="menu-btn" onClick={openNewTab} disabled={!blobURL}>
+            Open PDF in New Tab
+          </button>
+          <button className="menu-btn" onClick={openAndCloseTab}>
+            Open & Close Current Tab
+          </button>
+          <button
+            className="menu-btn"
+            onClick={() => window.open(window.location.href, "_blank")}
+          >
+            Open Current Page in New Tab
+          </button>
+          {blobURL && (
+            <div>
+              <h2>Embedded PDF</h2>
+              <iframe
+                src={blobURL}
+                title="PDF Content"
+                width="600"
+                height="400"
+              />
+            </div>
+          )}
+        </div>
+        <div className="column">
           <h2>Sample Form</h2>
           <form onSubmit={handleFormSubmit}>
             <label>
@@ -121,6 +211,43 @@ function App() {
             </label>
             <button type="submit">Save</button>
           </form>
+          <h2>Browser Data Management</h2>
+          <div>
+            <button className="menu-btn" onClick={setAllData}>
+              Set All Data
+            </button>
+            <button className="menu-btn" onClick={clearAllData}>
+              Clear All Data
+            </button>
+          </div>
+          <div>
+            <p style={{ color: getStatusColor(sessionStorageStatus) }}>
+              Session Storage Status: {sessionStorageStatus ? "Set" : "Not Set"}
+            </p>
+            <p style={{ color: getStatusColor(cookieStatus) }}>
+              Cookie Status: {cookieStatus ? "Set" : "Not Set"}
+            </p>
+            <p style={{ color: getStatusColor(cacheStatus) }}>
+              Cache Status: {cacheStatus ? "Set" : "Not Set"}
+            </p>
+            <p style={{ color: getStatusColor(localStorageStatus) }}>
+              Local Storage Status: {localStorageStatus ? "Set" : "Not Set"}
+            </p>
+          </div>
+          <div>
+            <button className="menu-btn" onClick={clearCookie}>
+              Clear Cookie
+            </button>
+            <button className="menu-btn" onClick={clearLocalStorageItem}>
+              Clear Local Storage
+            </button>
+            <button className="menu-btn" onClick={clearSessionStorageItem}>
+              Clear Session Storage
+            </button>
+            <button className="menu-btn" onClick={clearCacheData}>
+              Clear Cache Data
+            </button>
+          </div>
         </div>
       </div>
     </div>
